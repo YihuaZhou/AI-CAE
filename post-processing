@@ -1,0 +1,107 @@
+from odbAccess import openOdb
+import matplotlib.pyplot as plt
+import numpy as np
+import sys
+
+def analyze_odb_energy(odb_path):
+    # 打开 ODB 文件
+    try:
+        odb = openOdb(odb_path)
+        print(f"Opened ODB file: {odb_path}")
+    except Exception as e:
+        print(f"Error opening ODB file: {str(e)}")
+        sys.exit(1)
+
+    # 获取历史输出数据 (假设在 Step-1 中)
+    step_name = "Step-1"  # 根据你的模型调整步骤名称
+    if step_name not in odb.steps:
+        print(f"Step '{step_name}' not found in ODB file.")
+        sys.exit(1)
+
+    step = odb.steps[step_name]
+    history_region = step.historyRegions["Assembly ASSEMBLY"]
+
+    # 提取时间和能量数据
+    time = []
+    allae = []  # Hourglass energy (artificial strain energy)
+    etotal = []  # Total energy
+
+    # 获取 ALLAE
+    if "ALLAE" in history_region.historyOutputs:
+        allae_data = history_region.historyOutputs["ALLAE"].data
+        for t, value in allae_data:
+            time.append(t)
+            allae.append(value)
+    else:
+        print("ALLAE (hourglass energy) not found in history outputs.")
+        sys.exit(1)
+
+    # 获取 ETOTAL
+    if "ETOTAL" in history_region.historyOutputs:
+        etotal_data = history_region.historyOutputs["ETOTAL"].data
+        for t, value in etotal_data:
+            etotal.append(value)
+    else:
+        print("ETOTAL (total energy) not found in history outputs.")
+        sys.exit(1)
+
+    # 确保时间和数据长度一致
+    if len(time) != len(allae) or len(time) != len(etotal):
+        print("Mismatch in data lengths between time, ALLAE, and ETOTAL.")
+        sys.exit(1)
+
+    # 转换为 numpy 数组
+    time = np.array(time)
+    allae = np.array(allae)
+    etotal = np.array(etotal)
+
+    # 检查 hourglass energy 是否超过 total energy 的 5%
+    threshold = 0.05  # 5%
+    exceed_indices = np.where(allae > threshold * etotal)[0]
+    if len(exceed_indices) > 0:
+        print("ERROR: Hourglass energy (ALLAE) exceeds 5% of total energy (ETOTAL) at the following times:")
+        for idx in exceed_indices:
+            print(f"Time: {time[idx]:.4f}, ALLAE: {allae[idx]:.4f}, ETOTAL: {etotal[idx]:.4f}, Ratio: {allae[idx]/etotal[idx]*100:.2f}%")
+        print("Analysis aborted: 计算结果中存在 hourglass 超标.")
+        error_flag = True
+    else:
+        print("Check passed: Hourglass energy is within 5% of total energy.")
+        error_flag = False
+
+    # 绘制图形
+    plt.figure(figsize=(10, 6))
+    plt.plot(time, allae, label="Hourglass Energy (ALLAE)", color="red")
+    plt.plot(time, etotal, label="Total Energy (ETOTAL)", color="blue")
+    plt.plot(time, threshold * etotal, label="5% of ETOTAL", color="green", linestyle="--")
+    plt.xlabel("Time")
+    plt.ylabel("Energy")
+    plt.title("Energy Analysis from ODB File")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+
+    # 保存图形
+    output_image = "energy_plot.png"
+    plt.savefig(output_image)
+    print(f"Energy plot saved as: {output_image}")
+
+    # 显示图形（如果有图形环境）
+    try:
+        plt.show()
+    except:
+        print("No display environment available, plot not shown.")
+
+    # 关闭 ODB 文件
+    odb.close()
+
+    # 如果超标，退出程序
+    if error_flag:
+        sys.exit(1)
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python script.py <path_to_odb_file>")
+        sys.exit(1)
+
+    odb_path = sys.argv[1]
+    analyze_odb_energy(odb_path)
