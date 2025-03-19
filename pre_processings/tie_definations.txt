@@ -1,0 +1,8 @@
+***tie definition
+*tie, name=pair1, type=surface to surface, distance=0.9
+axy1,ayz2
+axy1,ayz2
+***
+ayz2, axy1
+bh3,by6
+by7, bh4
