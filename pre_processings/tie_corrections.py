@@ -20,6 +20,9 @@ class TieCorrectionApp:
         self.log = scrolledtext.ScrolledText(root, width=70, height=30)
         self.log.pack()
 
+
+
+
     def browse_file(self):
         path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
         if path:
