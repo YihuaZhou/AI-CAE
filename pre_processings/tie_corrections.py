@@ -128,6 +128,8 @@ class TieCorrectionApp:
         self.check_duplicates_and_swaps(p)
         messagebox.showinfo("Success", "Check completed! See results in the log.")
 
+
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = TieCorrectionApp(root)
