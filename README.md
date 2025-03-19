@@ -1,6 +1,7 @@
 # AI-CAE
 # preprocessing task 1
 # generate the automated drop orientations
+# auto-corrections of tie definitions
 
 #need three files 
 #1. system model file 
